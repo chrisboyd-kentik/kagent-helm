@@ -11,7 +11,49 @@ spec:
       {{- include "kagent.selectorLabels" . | nindent 6 }}
   policyTypes:
     - Egress
+    {{- if include "kagent.hasServicePorts" . }}
+    - Ingress
+    {{- end }}
   egress:
     {{- toYaml .Values.networkPolicy.egress | nindent 4 }}
+    {{- /* Auto-add egress rules for capabilities that initiate outbound connections */ -}}
+    {{- $svc := .Values.service | default dict }}
+    {{- if ($svc.synthetics).enabled }}
+    # Synthetics: outbound mesh test initiation to peer agents
+    - ports:
+      - protocol: TCP
+        port: 8877
+    {{- end }}
+  {{- if include "kagent.hasServicePorts" . }}
+  ingress:
+    - ports:
+      {{- if ($svc.flowProxy).enabled }}
+      - protocol: {{ $svc.flowProxy.protocol | default "UDP" }}
+        port: {{ $svc.flowProxy.port | default 9995 }}
+      {{- end }}
+      {{- if ($svc.snmpTrap).enabled }}
+      - protocol: {{ $svc.snmpTrap.protocol | default "UDP" }}
+        port: {{ $svc.snmpTrap.port | default 162 }}
+      {{- end }}
+      {{- if ($svc.syslog).enabled }}
+      {{- $syslogPort := $svc.syslog.port | default 514 }}
+      {{- range ($svc.syslog.protocols | default (list "UDP" "TCP")) }}
+      - protocol: {{ . }}
+        port: {{ $syslogPort }}
+      {{- end }}
+      {{- end }}
+      {{- if ($svc.bgp).enabled }}
+      - protocol: {{ $svc.bgp.protocol | default "TCP" }}
+        port: {{ $svc.bgp.port | default 179 }}
+      {{- end }}
+      {{- if ($svc.synthetics).enabled }}
+      - protocol: {{ $svc.synthetics.protocol | default "UDP" }}
+        port: {{ $svc.synthetics.port | default 9977 }}
+      {{- end }}
+      {{- if ($svc.healthCheck).enabled }}
+      - protocol: {{ $svc.healthCheck.protocol | default "TCP" }}
+        port: {{ $svc.healthCheck.port | default 8099 }}
+      {{- end }}
+  {{- end }}
 {{- end }}
 

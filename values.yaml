@@ -80,6 +80,9 @@ rbac:
 
 # Network policy configuration (opt-in, disabled by default for compatibility)
 # Configure according to organizational policies
+# When service capability ports are enabled, Ingress rules are automatically added
+# to allow inbound traffic on those ports. Egress rules for capability-specific
+# outbound traffic (synthetics TCP 8877, etc.) are also added automatically.
 networkPolicy:
   enabled: false
   egress:
@@ -96,13 +99,20 @@ networkPolicy:
       ports:
       - protocol: TCP
         port: 443
-    # SNMP (adjust CIDR for your network)
+    # SNMP/Streaming Telemetry polling via ranger (adjust CIDR for your network)
     # - to:
     #   - ipBlock:
     #       cidr: 10.0.0.0/8
     #   ports:
     #   - protocol: UDP
     #     port: 161
+    # SSH for NMS / Agentic Analysis (adjust CIDR for your managed devices)
+    # - to:
+    #   - ipBlock:
+    #       cidr: 10.0.0.0/8
+    #   ports:
+    #   - protocol: TCP
+    #     port: 22
 
 # Pod security context
 podSecurityContext:
@@ -121,7 +131,7 @@ podSecurityContext:
 # Linux capabilities mapped to Universal Agent capabilities:
 #   NET_ADMIN        - kdns (network administration operations)
 #   NET_BIND_SERVICE - kbgp, kproxy (bind to privileged ports below 1024)
-#   NET_RAW          - ranger/nms,ksynth,livesynth (raw sockets for packet capture)
+#   NET_RAW          - ranger (SNMP/Streaming Telemetry), ksynth, livesynth (raw sockets)
 
 securityContext:
   allowPrivilegeEscalation: false
@@ -212,6 +222,62 @@ persistence:
       # Secret name pattern will be: {{ fullname }}-{replica-index}-secret
       # Keys must be named: private_key.pem, public_key.pem
       name: ""
+
+# Service configuration
+# Exposes inbound ports for UA capabilities that receive traffic from network devices.
+# Each capability can be individually enabled/disabled.
+service:
+  enabled: false
+  type: ClusterIP
+  # Annotations to add to the Service (e.g., for cloud load balancer configuration)
+  annotations: {}
+
+  # Flow Proxy - receives NetFlow/sFlow/IPFIX from routers/switches
+  flowProxy:
+    enabled: false
+    port: 9995
+    protocol: UDP
+    # nodePort: 30995  # Optional: pin a specific node port (NodePort/LoadBalancer only)
+
+  # SNMP Trap Receiver - receives SNMP traps from network devices
+  snmpTrap:
+    enabled: false
+    port: 162
+    protocol: UDP
+    # nodePort: 30162  # Optional: pin a specific node port (NodePort/LoadBalancer only)
+
+  # Syslog Server - receives syslog messages from network devices
+  syslog:
+    enabled: false
+    # Expose both UDP and TCP for syslog
+    port: 514
+    protocols:
+      - UDP
+      - TCP
+    # nodePorts: [30514, 30515]  # Optional: pin node ports per protocol (same order as protocols list)
+
+  # BGP Proxy - receives BGP peering sessions from routers
+  bgp:
+    enabled: false
+    port: 179
+    protocol: TCP
+    # nodePort: 30179  # Optional: pin a specific node port (NodePort/LoadBalancer only)
+
+  # Synthetics test agent - receives inbound mesh test probes (UDP 9977)
+  # NOTE: TCP 8877 is used for outbound mesh test initiation and is handled
+  # automatically via NetworkPolicy egress when synthetics is enabled.
+  synthetics:
+    enabled: false
+    port: 9977
+    protocol: UDP
+    # nodePort: 30977  # Optional: pin a specific node port (NodePort/LoadBalancer only)
+
+  # Health check endpoint (auto-configured when probes are enabled)
+  healthCheck:
+    enabled: false
+    port: 8099
+    protocol: TCP
+    # nodePort: 30099  # Optional: pin a specific node port (NodePort/LoadBalancer only)
 
 # ConfigMap configuration (optional, environment variables take precedence)
 configmap:

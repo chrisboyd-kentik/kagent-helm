@@ -359,6 +359,8 @@
     },
     "service": {
       "type": "object",
+      "description": "Service resource configuration for exposing UA capability inbound ports",
+      "additionalProperties": false,
       "properties": {
         "enabled": {
           "type": "boolean",
@@ -368,11 +370,87 @@
         "type": {
           "type": "string",
           "enum": ["ClusterIP", "NodePort", "LoadBalancer"],
-          "default": "ClusterIP"
+          "default": "ClusterIP",
+          "description": "Kubernetes Service type"
         },
-        "port": {
-          "type": "integer",
-          "default": 8080
+        "annotations": {
+          "type": "object",
+          "additionalProperties": {"type": "string"},
+          "description": "Annotations for the Service (e.g., cloud LB config)"
+        },
+        "flowProxy": {
+          "type": "object",
+          "description": "Flow Proxy - receives NetFlow/sFlow/IPFIX (UDP 9995)",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "port": {"type": "integer", "default": 9995},
+            "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "UDP"},
+            "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
+          }
+        },
+        "snmpTrap": {
+          "type": "object",
+          "description": "SNMP Trap Receiver - receives SNMP traps (UDP 162)",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "port": {"type": "integer", "default": 162},
+            "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "UDP"},
+            "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
+          }
+        },
+        "syslog": {
+          "type": "object",
+          "description": "Syslog Server - receives syslog messages (UDP+TCP 514)",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "port": {"type": "integer", "default": 514},
+            "protocols": {
+              "type": "array",
+              "items": {"type": "string", "enum": ["UDP", "TCP"]},
+              "default": ["UDP", "TCP"]
+            },
+            "nodePorts": {
+              "type": "array",
+              "items": {"type": "integer"},
+              "description": "Fixed node ports per protocol (same order as protocols list)"
+            }
+          }
+        },
+        "bgp": {
+          "type": "object",
+          "description": "BGP Proxy - receives BGP peering sessions (TCP 179)",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "port": {"type": "integer", "default": 179},
+            "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "TCP"},
+            "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
+          }
+        },
+        "synthetics": {
+          "type": "object",
+          "description": "Synthetics test agent - inbound mesh test probes (UDP 9977). TCP 8877 egress is handled automatically via NetworkPolicy.",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "port": {"type": "integer", "default": 9977},
+            "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "UDP"},
+            "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
+          }
+        },
+        "healthCheck": {
+          "type": "object",
+          "description": "Health check endpoint (TCP 8099)",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": false},
+            "port": {"type": "integer", "default": 8099},
+            "protocol": {"type": "string", "enum": ["TCP"], "default": "TCP"},
+            "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
+          }
         }
       }
     }

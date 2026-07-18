@@ -1,0 +1,186 @@
+suite: Service tests
+templates:
+  - service.yaml
+set:
+  kagent.companyId: "12345"
+  kagent.provisioningToken: "test-token"
+
+tests:
+  - it: should not render Service when disabled (default)
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Service when enabled with flow proxy
+    set:
+      service.enabled: true
+      service.flowProxy.enabled: true
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - contains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 9995
+            targetPort: 9995
+            protocol: UDP
+
+  - it: should render Service with custom port for flow proxy
+    set:
+      service.enabled: true
+      service.flowProxy.enabled: true
+      service.flowProxy.port: 2055
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 2055
+            targetPort: 2055
+            protocol: UDP
+
+  - it: should render BGP port when enabled
+    set:
+      service.enabled: true
+      service.bgp.enabled: true
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: bgp
+            port: 179
+            targetPort: 179
+            protocol: TCP
+
+  - it: should render SNMP trap port when enabled
+    set:
+      service.enabled: true
+      service.snmpTrap.enabled: true
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: snmp-trap
+            port: 162
+            targetPort: 162
+            protocol: UDP
+
+  - it: should render syslog with both UDP and TCP ports
+    set:
+      service.enabled: true
+      service.syslog.enabled: true
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: syslog-udp
+            port: 514
+            targetPort: 514
+            protocol: UDP
+      - contains:
+          path: spec.ports
+          content:
+            name: syslog-tcp
+            port: 514
+            targetPort: 514
+            protocol: TCP
+
+  - it: should render synthetics inbound port (UDP only)
+    set:
+      service.enabled: true
+      service.synthetics.enabled: true
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: synthetics
+            port: 9977
+            targetPort: 9977
+            protocol: UDP
+
+  - it: should render multiple capabilities together
+    set:
+      service.enabled: true
+      service.flowProxy.enabled: true
+      service.bgp.enabled: true
+      service.snmpTrap.enabled: true
+    asserts:
+      - isKind:
+          of: Service
+      - contains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 9995
+            targetPort: 9995
+            protocol: UDP
+      - contains:
+          path: spec.ports
+          content:
+            name: bgp
+            port: 179
+            targetPort: 179
+            protocol: TCP
+      - contains:
+          path: spec.ports
+          content:
+            name: snmp-trap
+            port: 162
+            targetPort: 162
+            protocol: UDP
+
+  - it: should support LoadBalancer type
+    set:
+      service.enabled: true
+      service.type: LoadBalancer
+      service.flowProxy.enabled: true
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+
+  - it: should include annotations when specified
+    set:
+      service.enabled: true
+      service.flowProxy.enabled: true
+      service.annotations:
+        custom-annotation: nlb
+    asserts:
+      - exists:
+          path: metadata.annotations
+      - equal:
+          path: metadata.annotations.custom-annotation
+          value: nlb
+
+  - it: should render health check port when enabled
+    set:
+      service.enabled: true
+      service.healthCheck.enabled: true
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: health-check
+            port: 8099
+            targetPort: 8099
+            protocol: TCP
+
+  - it: should render nodePort when specified with NodePort type
+    set:
+      service.enabled: true
+      service.type: NodePort
+      service.flowProxy.enabled: true
+      service.flowProxy.nodePort: 30995
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 9995
+            targetPort: 9995
+            protocol: UDP
+            nodePort: 30995
