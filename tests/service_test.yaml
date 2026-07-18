@@ -184,3 +184,26 @@ tests:
             targetPort: 9995
             protocol: UDP
             nodePort: 30995
+
+  - it: should not render nodePort when service type is ClusterIP
+    set:
+      service.enabled: true
+      service.type: ClusterIP
+      service.flowProxy.enabled: true
+      service.flowProxy.nodePort: 30995
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 9995
+            targetPort: 9995
+            protocol: UDP
+      - notContains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 9995
+            targetPort: 9995
+            protocol: UDP
+            nodePort: 30995

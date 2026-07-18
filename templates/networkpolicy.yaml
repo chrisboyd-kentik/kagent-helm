@@ -1,4 +1,10 @@
 {{- if .Values.networkPolicy.enabled }}
+{{- $svc := .Values.service | default dict }}
+{{- $lp := .Values.livenessProbe | default dict }}
+{{- $rp := .Values.readinessProbe | default dict }}
+{{- $probesEnabled := or $lp.enabled $rp.enabled }}
+{{- $probePort := ($lp.httpGet | default dict).port | default (($rp.httpGet | default dict).port | default 8099) }}
+{{- $hasIngress := or (include "kagent.hasServicePorts" .) $probesEnabled }}
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -11,20 +17,21 @@ spec:
       {{- include "kagent.selectorLabels" . | nindent 6 }}
   policyTypes:
     - Egress
-    {{- if include "kagent.hasServicePorts" . }}
+    {{- if $hasIngress }}
     - Ingress
     {{- end }}
   egress:
+    {{- if .Values.networkPolicy.egress }}
     {{- toYaml .Values.networkPolicy.egress | nindent 4 }}
+    {{- end }}
     {{- /* Auto-add egress rules for capabilities that initiate outbound connections */ -}}
-    {{- $svc := .Values.service | default dict }}
     {{- if ($svc.synthetics).enabled }}
-    # Synthetics: outbound mesh test initiation to peer agents
+    # Synthetics: outbound mesh test initiation to peer agents (all destinations)
     - ports:
       - protocol: TCP
         port: 8877
     {{- end }}
-  {{- if include "kagent.hasServicePorts" . }}
+  {{- if $hasIngress }}
   ingress:
     - ports:
       {{- if ($svc.flowProxy).enabled }}
@@ -50,9 +57,9 @@ spec:
       - protocol: {{ $svc.synthetics.protocol | default "UDP" }}
         port: {{ $svc.synthetics.port | default 9977 }}
       {{- end }}
-      {{- if ($svc.healthCheck).enabled }}
-      - protocol: {{ $svc.healthCheck.protocol | default "TCP" }}
-        port: {{ $svc.healthCheck.port | default 8099 }}
+      {{- if or ($svc.healthCheck).enabled $probesEnabled }}
+      - protocol: TCP
+        port: {{ ($svc.healthCheck).port | default $probePort }}
       {{- end }}
   {{- end }}
 {{- end }}
