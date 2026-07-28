@@ -207,3 +207,56 @@ tests:
             targetPort: 9995
             protocol: UDP
             nodePort: 30995
+
+  - it: should render externalTrafficPolicy when set
+    set:
+      service.enabled: true
+      service.type: LoadBalancer
+      service.externalTrafficPolicy: Local
+      service.flowProxy.enabled: true
+    asserts:
+      - equal:
+          path: spec.externalTrafficPolicy
+          value: Local
+
+  - it: should not render externalTrafficPolicy when not set
+    set:
+      service.enabled: true
+      service.flowProxy.enabled: true
+    asserts:
+      - isNull:
+          path: spec.externalTrafficPolicy
+
+  - it: should render dual-stack configuration
+    set:
+      service.enabled: true
+      service.ipFamilyPolicy: RequireDualStack
+      service.ipFamilies:
+        - IPv4
+        - IPv6
+      service.flowProxy.enabled: true
+    asserts:
+      - equal:
+          path: spec.ipFamilyPolicy
+          value: RequireDualStack
+      - equal:
+          path: spec.ipFamilies
+          value:
+            - IPv4
+            - IPv6
+
+  - it: should render IPv6 single-stack
+    set:
+      service.enabled: true
+      service.ipFamilyPolicy: SingleStack
+      service.ipFamilies:
+        - IPv6
+      service.flowProxy.enabled: true
+    asserts:
+      - equal:
+          path: spec.ipFamilyPolicy
+          value: SingleStack
+      - equal:
+          path: spec.ipFamilies
+          value:
+            - IPv6

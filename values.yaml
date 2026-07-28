@@ -232,6 +232,18 @@ service:
   # Annotations to add to the Service (e.g., for cloud load balancer configuration)
   annotations: {}
 
+  # External traffic policy: Cluster (default) or Local
+  # Set to "Local" to preserve the source IP of incoming packets. This is critical for
+  # flow proxy (NetFlow/IPFIX/sFlow) where the sender's IP is the device identity.
+  # Only applies to NodePort and LoadBalancer service types.
+  # externalTrafficPolicy: Local
+
+  # IPv6 / Dual-stack configuration (requires Kubernetes 1.23+ with dual-stack enabled)
+  # ipFamilyPolicy: RequireDualStack   # SingleStack, PreferDualStack, or RequireDualStack
+  # ipFamilies:
+  #   - IPv4
+  #   - IPv6
+
   # Flow Proxy - receives NetFlow/sFlow/IPFIX from routers/switches
   flowProxy:
     enabled: false

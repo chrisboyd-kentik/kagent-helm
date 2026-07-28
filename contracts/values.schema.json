@@ -378,6 +378,21 @@
           "additionalProperties": {"type": "string"},
           "description": "Annotations for the Service (e.g., cloud LB config)"
         },
+        "externalTrafficPolicy": {
+          "type": "string",
+          "enum": ["Cluster", "Local"],
+          "description": "External traffic policy. Set to Local to preserve source IP (NodePort/LoadBalancer only)"
+        },
+        "ipFamilyPolicy": {
+          "type": "string",
+          "enum": ["SingleStack", "PreferDualStack", "RequireDualStack"],
+          "description": "IP family policy for dual-stack services (Kubernetes 1.23+)"
+        },
+        "ipFamilies": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["IPv4", "IPv6"]},
+          "description": "IP families for the Service (e.g., [IPv4, IPv6] for dual-stack)"
+        },
         "flowProxy": {
           "type": "object",
           "description": "Flow Proxy - receives NetFlow/sFlow/IPFIX (UDP 9995)",

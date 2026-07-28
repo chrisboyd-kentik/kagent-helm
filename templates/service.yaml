@@ -12,6 +12,16 @@ metadata:
   {{- end }}
 spec:
   type: {{ .Values.service.type | default "ClusterIP" }}
+  {{- with .Values.service.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ . }}
+  {{- end }}
+  {{- with .Values.service.ipFamilyPolicy }}
+  ipFamilyPolicy: {{ . }}
+  {{- end }}
+  {{- with .Values.service.ipFamilies }}
+  ipFamilies:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   selector:
     {{- include "kagent.selectorLabels" . | nindent 4 }}
   ports:
