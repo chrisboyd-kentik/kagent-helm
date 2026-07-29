@@ -33,17 +33,23 @@ spec:
     {{- end }}
   {{- if $hasIngress }}
   ingress:
+    {{- with .Values.networkPolicy.ingressFrom }}
+    - from:
+        {{- toYaml . | nindent 8 }}
+      ports:
+    {{- else }}
     - ports:
+    {{- end }}
       {{- if ($svc.flowProxy).enabled }}
       - protocol: {{ $svc.flowProxy.protocol | default "UDP" }}
-        port: {{ $svc.flowProxy.port | default 9995 }}
+        port: {{ $svc.flowProxy.targetPort | default ($svc.flowProxy.port | default 9995) }}
       {{- end }}
       {{- if ($svc.snmpTrap).enabled }}
       - protocol: {{ $svc.snmpTrap.protocol | default "UDP" }}
-        port: {{ $svc.snmpTrap.port | default 162 }}
+        port: {{ $svc.snmpTrap.targetPort | default ($svc.snmpTrap.port | default 162) }}
       {{- end }}
       {{- if ($svc.syslog).enabled }}
-      {{- $syslogPort := $svc.syslog.port | default 514 }}
+      {{- $syslogPort := $svc.syslog.targetPort | default ($svc.syslog.port | default 514) }}
       {{- range ($svc.syslog.protocols | default (list "UDP" "TCP")) }}
       - protocol: {{ . }}
         port: {{ $syslogPort }}
@@ -51,15 +57,15 @@ spec:
       {{- end }}
       {{- if ($svc.bgp).enabled }}
       - protocol: {{ $svc.bgp.protocol | default "TCP" }}
-        port: {{ $svc.bgp.port | default 179 }}
+        port: {{ $svc.bgp.targetPort | default ($svc.bgp.port | default 179) }}
       {{- end }}
       {{- if ($svc.synthetics).enabled }}
       - protocol: {{ $svc.synthetics.protocol | default "UDP" }}
-        port: {{ $svc.synthetics.port | default 9977 }}
+        port: {{ $svc.synthetics.targetPort | default ($svc.synthetics.port | default 9977) }}
       {{- end }}
       {{- if or ($svc.healthCheck).enabled $probesEnabled }}
       - protocol: TCP
-        port: {{ ($svc.healthCheck).port | default $probePort }}
+        port: {{ ($svc.healthCheck).targetPort | default (($svc.healthCheck).port | default $probePort) }}
       {{- end }}
   {{- end }}
 {{- end }}

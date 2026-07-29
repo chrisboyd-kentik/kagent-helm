@@ -217,6 +217,10 @@
         "egress": {
           "type": "array",
           "description": "Egress rules for NetworkPolicy"
+        },
+        "ingressFrom": {
+          "type": "array",
+          "description": "Restrict ingress sources (from: selector). If not set, all sources allowed."
         }
       }
     },
@@ -393,6 +397,20 @@
           "items": {"type": "string", "enum": ["IPv4", "IPv6"]},
           "description": "IP families for the Service (e.g., [IPv4, IPv6] for dual-stack)"
         },
+        "sessionAffinity": {
+          "type": "string",
+          "enum": ["None", "ClientIP"],
+          "description": "Session affinity. Set to ClientIP for UDP to prevent split flow records"
+        },
+        "sessionAffinityConfig": {
+          "type": "object",
+          "description": "Session affinity configuration (e.g., clientIP.timeoutSeconds)"
+        },
+        "loadBalancerSourceRanges": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Restrict LoadBalancer source IPs (CIDR notation)"
+        },
         "flowProxy": {
           "type": "object",
           "description": "Flow Proxy - receives NetFlow/sFlow/IPFIX (UDP 9995)",
@@ -400,6 +418,7 @@
           "properties": {
             "enabled": {"type": "boolean", "default": false},
             "port": {"type": "integer", "default": 9995},
+            "targetPort": {"type": "integer", "description": "Container listening port if different from service port"},
             "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "UDP"},
             "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
           }
@@ -411,6 +430,7 @@
           "properties": {
             "enabled": {"type": "boolean", "default": false},
             "port": {"type": "integer", "default": 162},
+            "targetPort": {"type": "integer", "description": "Container listening port if different from service port"},
             "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "UDP"},
             "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
           }
@@ -422,6 +442,7 @@
           "properties": {
             "enabled": {"type": "boolean", "default": false},
             "port": {"type": "integer", "default": 514},
+            "targetPort": {"type": "integer", "description": "Container listening port if different from service port"},
             "protocols": {
               "type": "array",
               "items": {"type": "string", "enum": ["UDP", "TCP"]},
@@ -441,6 +462,7 @@
           "properties": {
             "enabled": {"type": "boolean", "default": false},
             "port": {"type": "integer", "default": 179},
+            "targetPort": {"type": "integer", "description": "Container listening port if different from service port"},
             "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "TCP"},
             "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
           }
@@ -452,6 +474,7 @@
           "properties": {
             "enabled": {"type": "boolean", "default": false},
             "port": {"type": "integer", "default": 9977},
+            "targetPort": {"type": "integer", "description": "Container listening port if different from service port"},
             "protocol": {"type": "string", "enum": ["UDP", "TCP"], "default": "UDP"},
             "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
           }
@@ -463,6 +486,7 @@
           "properties": {
             "enabled": {"type": "boolean", "default": false},
             "port": {"type": "integer", "default": 8099},
+            "targetPort": {"type": "integer", "description": "Container listening port if different from service port"},
             "protocol": {"type": "string", "enum": ["TCP"], "default": "TCP"},
             "nodePort": {"type": "integer", "description": "Fixed node port (NodePort/LoadBalancer only)"}
           }

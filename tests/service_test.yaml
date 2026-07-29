@@ -260,3 +260,63 @@ tests:
           path: spec.ipFamilies
           value:
             - IPv6
+
+  - it: should render sessionAffinity when set
+    set:
+      service.enabled: true
+      service.sessionAffinity: ClientIP
+      service.sessionAffinityConfig:
+        clientIP:
+          timeoutSeconds: 10800
+      service.flowProxy.enabled: true
+    asserts:
+      - equal:
+          path: spec.sessionAffinity
+          value: ClientIP
+      - equal:
+          path: spec.sessionAffinityConfig.clientIP.timeoutSeconds
+          value: 10800
+
+  - it: should render loadBalancerSourceRanges when set
+    set:
+      service.enabled: true
+      service.type: LoadBalancer
+      service.loadBalancerSourceRanges:
+        - 10.0.0.0/8
+        - 192.168.0.0/16
+      service.flowProxy.enabled: true
+    asserts:
+      - equal:
+          path: spec.loadBalancerSourceRanges
+          value:
+            - 10.0.0.0/8
+            - 192.168.0.0/16
+
+  - it: should render independent targetPort when set
+    set:
+      service.enabled: true
+      service.flowProxy.enabled: true
+      service.flowProxy.port: 9995
+      service.flowProxy.targetPort: 19995
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 9995
+            targetPort: 19995
+            protocol: UDP
+
+  - it: should default targetPort to port when not set
+    set:
+      service.enabled: true
+      service.flowProxy.enabled: true
+      service.flowProxy.port: 2055
+    asserts:
+      - contains:
+          path: spec.ports
+          content:
+            name: flow-proxy
+            port: 2055
+            targetPort: 2055
+            protocol: UDP

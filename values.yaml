@@ -114,6 +114,15 @@ networkPolicy:
     #   - protocol: TCP
     #     port: 22
 
+  # Restrict which sources can reach capability inbound ports (optional).
+  # If not set, all sources are allowed (any pod, any namespace, any external IP).
+  # ingressFrom:
+  #   - ipBlock:
+  #       cidr: 10.0.0.0/8
+  #   - namespaceSelector:
+  #       matchLabels:
+  #         kubernetes.io/metadata.name: network-devices
+
 # Pod security context
 podSecurityContext:
   runAsNonRoot: true
@@ -236,6 +245,9 @@ service:
   # Set to "Local" to preserve the source IP of incoming packets. This is critical for
   # flow proxy (NetFlow/IPFIX/sFlow) where the sender's IP is the device identity.
   # Only applies to NodePort and LoadBalancer service types.
+  # WARNING: With externalTrafficPolicy: Local and replicaCount: 1, traffic arriving
+  # at nodes without a kagent pod will be dropped. Ensure your LB health checks are
+  # configured, or use replicaCount >= node count for full coverage.
   # externalTrafficPolicy: Local
 
   # IPv6 / Dual-stack configuration (requires Kubernetes 1.23+ with dual-stack enabled)
@@ -244,34 +256,56 @@ service:
   #   - IPv4
   #   - IPv6
 
+  # Session affinity: None (default) or ClientIP
+  # Set to ClientIP for UDP protocols (flow proxy, syslog) to ensure packets from
+  # the same source device consistently reach the same pod, preventing split flow records.
+  # sessionAffinity: ClientIP
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     timeoutSeconds: 10800  # 3 hours
+
+  # Restrict LoadBalancer source IPs (LoadBalancer type only)
+  # loadBalancerSourceRanges:
+  #   - 10.0.0.0/8
+  #   - 192.168.0.0/16
+
   # Flow Proxy - receives NetFlow/sFlow/IPFIX from routers/switches
+  # IMPORTANT: The port must match the listening port configured in the Kentik portal.
+  # The Helm chart opens the network path but the agent's listening port is set server-side.
   flowProxy:
     enabled: false
     port: 9995
+    # targetPort: 9995  # Optional: container listening port if different from service port
     protocol: UDP
     # nodePort: 30995  # Optional: pin a specific node port (NodePort/LoadBalancer only)
 
   # SNMP Trap Receiver - receives SNMP traps from network devices
+  # IMPORTANT: The port must match the listening port configured in the Kentik portal.
   snmpTrap:
     enabled: false
     port: 162
+    # targetPort: 162
     protocol: UDP
     # nodePort: 30162  # Optional: pin a specific node port (NodePort/LoadBalancer only)
 
   # Syslog Server - receives syslog messages from network devices
+  # IMPORTANT: The port must match the listening port configured in the Kentik portal.
   syslog:
     enabled: false
     # Expose both UDP and TCP for syslog
     port: 514
+    # targetPort: 514
     protocols:
       - UDP
       - TCP
     # nodePorts: [30514, 30515]  # Optional: pin node ports per protocol (same order as protocols list)
 
   # BGP Proxy - receives BGP peering sessions from routers
+  # IMPORTANT: The port must match the listening port configured in the Kentik portal.
   bgp:
     enabled: false
     port: 179
+    # targetPort: 179
     protocol: TCP
     # nodePort: 30179  # Optional: pin a specific node port (NodePort/LoadBalancer only)
 
@@ -281,13 +315,18 @@ service:
   synthetics:
     enabled: false
     port: 9977
+    # targetPort: 9977
     protocol: UDP
     # nodePort: 30977  # Optional: pin a specific node port (NodePort/LoadBalancer only)
 
-  # Health check endpoint (auto-configured when probes are enabled)
+  # Health check endpoint
+  # When enabled, automatically starts the HC server (K_HC_SERVER_ENABLED=true)
+  # even if liveness/readiness probes are not configured.
+  # To disable HC server while keeping the service port: use configmap to override K_HC_SERVER_ENABLED=false
   healthCheck:
     enabled: false
     port: 8099
+    # targetPort: 8099
     protocol: TCP
     # nodePort: 30099  # Optional: pin a specific node port (NodePort/LoadBalancer only)
 
